@@ -3,6 +3,7 @@ package accounts
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/netip"
 	"time"
@@ -12,11 +13,11 @@ import (
 	goversion "github.com/hashicorp/go-version"
 	"github.com/netbirdio/netbird/management/server/account"
 	nbcontext "github.com/netbirdio/netbird/management/server/context"
+	"github.com/netbirdio/netbird/management/server/settings"
+	"github.com/netbirdio/netbird/management/server/types"
 	"github.com/netbirdio/netbird/shared/management/http/api"
 	"github.com/netbirdio/netbird/shared/management/http/util"
-	"github.com/netbirdio/netbird/management/server/settings"
 	"github.com/netbirdio/netbird/shared/management/status"
-	"github.com/netbirdio/netbird/management/server/types"
 )
 
 const (
@@ -163,7 +164,7 @@ func (h *handler) getAllAccounts(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSONObject(r.Context(), w, []*api.Account{resp})
 }
 
-func (h *handler) updateAccountRequestSettings(req api.PutApiAccountsAccountIdJSONRequestBody, w http.ResponseWriter) *types.Settings {
+func (h *handler) updateAccountRequestSettings(req api.PutApiAccountsAccountIdJSONRequestBody) (*types.Settings, error) {
 	returnSettings := &types.Settings{
 		PeerLoginExpirationEnabled: req.Settings.PeerLoginExpirationEnabled,
 		PeerLoginExpiration:        time.Duration(float64(time.Second.Nanoseconds()) * float64(req.Settings.PeerLoginExpiration)),
@@ -209,12 +210,11 @@ func (h *handler) updateAccountRequestSettings(req api.PutApiAccountsAccountIdJS
 			err == nil {
 			returnSettings.AutoUpdateVersion = *req.Settings.AutoUpdateVersion
 		} else if *req.Settings.AutoUpdateVersion != "" {
-			util.WriteErrorResponse("Invalid AutoUpdateVersion", http.StatusBadRequest, w)
-			return nil
+			return nil, fmt.Errorf("invalid AutoUpdateVersion")
 		}
 	}
 
-	return returnSettings
+	return returnSettings, nil
 }
 
 // updateAccount is HTTP PUT handler that updates the provided account. Updates only account settings (server.Settings)
@@ -241,9 +241,9 @@ func (h *handler) updateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings := h.updateAccountRequestSettings(req, w)
-	if settings == nil {
-		return
+	settings, err := h.updateAccountRequestSettings(req)
+	if err != nil {
+		util.WriteError(r.Context(), err, w)
 	}
 	if req.Settings.NetworkRange != nil && *req.Settings.NetworkRange != "" {
 		prefix, err := netip.ParsePrefix(*req.Settings.NetworkRange)

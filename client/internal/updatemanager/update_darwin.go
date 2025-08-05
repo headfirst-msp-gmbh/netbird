@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"runtime"
 	"strings"
 	"syscall"
 )
@@ -25,9 +24,7 @@ func (u *UpdateManager) triggerUpdate(targetVersion string) error {
 		return u.updateHomeBrew()
 	}
 	// Installed using pkg file
-	url := strings.ReplaceAll(pkgDownloadURL, "%version", targetVersion)
-	url = strings.ReplaceAll(url, "%arch", runtime.GOARCH)
-	path, err := downloadFileToTemporaryDir(u.ctx, url)
+	path, err := downloadFileToTemporaryDir(u.ctx, urlWithVersionArch(pkgDownloadURL, targetVersion))
 	if err != nil {
 		return fmt.Errorf("error downloading update file: %w", err)
 	}
@@ -99,7 +96,7 @@ func (u *UpdateManager) updateHomeBrew() error {
 	// Restart netbird service after the fact
 	// This is a workaround since attempting to restart using launchctl will kill the service and die before starting
 	// the service again as it's a child process
-	// using SigTerm should ensure a clean shutdown
+	// using SIGTERM should ensure a clean shutdown
 	process, err := os.FindProcess(currentPID)
 	if err != nil {
 		return fmt.Errorf("error finding current process: %w", err)

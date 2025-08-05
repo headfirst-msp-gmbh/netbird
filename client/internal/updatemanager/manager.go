@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -50,7 +51,7 @@ func NewUpdateManager(statusRecorder *peer.Status) *UpdateManager {
 
 func (u *UpdateManager) SetVersion(v string) {
 	if u.version != v {
-		log.Tracef("Auto-update verstion set to %s", v)
+		log.Tracef("Auto-update version set to %s", v)
 		u.version = v
 		go u.CheckForUpdates()
 	}
@@ -144,4 +145,10 @@ func downloadFileToTemporaryDir(ctx context.Context, fileURL string) (string, er
 	log.Tracef("Downloaded update file to %s", out.Name())
 
 	return out.Name(), nil
+}
+
+func urlWithVersionArch(url, version string) string { //nolint:unused
+	url = strings.ReplaceAll(url, "%version", version)
+	url = strings.ReplaceAll(url, "%arch", runtime.GOARCH)
+	return url
 }

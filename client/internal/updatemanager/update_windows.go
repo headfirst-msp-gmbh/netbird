@@ -4,11 +4,8 @@ package updatemanager
 
 import (
 	"fmt"
-	"os/exec"
-	"runtime"
-	"strings"
-
 	log "github.com/sirupsen/logrus"
+	"os/exec"
 
 	"golang.org/x/sys/windows/registry"
 )
@@ -42,9 +39,7 @@ func installationMethod() string {
 }
 
 func (u *UpdateManager) updateMSI(targetVersion string) error {
-	url := strings.ReplaceAll(msiDownloadURL, "%version", targetVersion)
-	url = strings.ReplaceAll(url, "%arch", runtime.GOARCH)
-	path, err := downloadFileToTemporaryDir(u.ctx, url)
+	path, err := downloadFileToTemporaryDir(u.ctx, urlWithVersionArch(msiDownloadURL, targetVersion))
 	if err != nil {
 		return err
 	}
@@ -54,9 +49,7 @@ func (u *UpdateManager) updateMSI(targetVersion string) error {
 }
 
 func (u *UpdateManager) updateEXE(targetVersion string) error {
-	url := strings.ReplaceAll(exeDownloadURL, "%version", targetVersion)
-	url = strings.ReplaceAll(url, "%arch", runtime.GOARCH)
-	path, err := downloadFileToTemporaryDir(u.ctx, url)
+	path, err := downloadFileToTemporaryDir(u.ctx, urlWithVersionArch(exeDownloadURL, targetVersion))
 	if err != nil {
 		return err
 	}
